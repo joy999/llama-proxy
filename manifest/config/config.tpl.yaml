@@ -30,6 +30,7 @@ openai:
     cache_type_k: "q4_0"        # K缓存类型
     cache_type_v: "q4_0"        # V缓存类型
     flash_attn: "on"            # 闪注意力优化
+    vision_model_path: ""       # 视觉模型路径（mmproj文件），用于多模态模型
     no_mmap: false              # 是否禁用mmap
     mlock: false                # 是否锁定内存到物理内存
     temp: 0.6                   # 温度参数

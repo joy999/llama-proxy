@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -127,4 +128,22 @@ func WriteError(r *ghttp.Request, status int, message string, errorType string, 
 			"code":    code,
 		},
 	})
+}
+
+func WriteErrorStd(w http.ResponseWriter, status int, message string, errorType string, code string) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	errorResp := map[string]interface{}{
+		"error": map[string]interface{}{
+			"message": message,
+			"type":    errorType,
+			"param":   nil,
+			"code":    code,
+		},
+	}
+	if jsonData, err := json.Marshal(errorResp); err == nil {
+		w.Write(jsonData)
+	} else {
+		w.Write([]byte(`{"error":{"message":"Internal error","type":"server_error","param":null,"code":"json_marshal_error"}}`))
+	}
 }

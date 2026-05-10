@@ -164,6 +164,12 @@ func buildCommandArgs(cfg *model.ModelConfig, defaultParams *model.DefaultParams
 		args = append(args, "--flash-attn", defaultParams.FlashAttn)
 	}
 
+	if cfg.VisionModelPath != "" {
+		args = append(args, "--mmproj", cfg.VisionModelPath)
+	} else if defaultParams.VisionModelPath != "" {
+		args = append(args, "--mmproj", defaultParams.VisionModelPath)
+	}
+
 	if cfg.NoMmap || defaultParams.NoMmap {
 		args = append(args, "--no-mmap")
 	}
@@ -404,10 +410,10 @@ var modelRequiredPaths = map[string]bool{
 	"/v1/embeddings":       true,
 }
 
-func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
-	path := r.Request.URL.Path
-	method := r.Request.Method
-	remoteAddr := r.Request.RemoteAddr
+func (s *sLLM) ServeHTTP(ctx context.Context, r *http.Request, w http.ResponseWriter) {
+	path := r.URL.Path
+	method := r.Method
+	remoteAddr := r.RemoteAddr
 	startTime := time.Now()
 
 	g.Log().Infof(ctx, "[REQUEST] %s %s from %s", method, path, remoteAddr)
@@ -416,9 +422,10 @@ func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
 	defer func() { <-c }()
 
 	s.worker.Add(ctx, func(ctx context.Context) {
+		statusCode := http.StatusOK
 		defer func() {
 			duration := time.Since(startTime)
-			g.Log().Infof(ctx, "[RESPONSE] %s %s from %s completed in %v, status: %d", method, path, remoteAddr, duration, r.Response.Status)
+			g.Log().Infof(ctx, "[RESPONSE] %s %s from %s completed in %v, status: %d", method, path, remoteAddr, duration, statusCode)
 			c <- struct{}{}
 		}()
 
@@ -428,13 +435,34 @@ func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
 
 		if needsModel {
 			// 需要模型参数的接口
-			body := r.GetBodyString()
-			if body != "" {
+			var body []byte
+			var err error
+
+			// 检查请求体是否为 nil
+			if r.Body != nil {
+				body, err = io.ReadAll(r.Body)
+				if err != nil {
+					g.Log().Errorf(ctx, "[REQUEST] Failed to read request body: %v", err)
+					middleware.WriteErrorStd(w, http.StatusBadRequest, "Failed to read request body", "invalid_request_error", "read_body_error")
+					statusCode = http.StatusBadRequest
+					return
+				}
+			} else {
+				g.Log().Debug(ctx, "[REQUEST] Request body is nil")
+				body = []byte{}
+			}
+
+			// 重置请求体，以便后续转发逻辑可以重新读取
+			r.Body = io.NopCloser(bytes.NewReader(body))
+
+			if len(body) > 0 {
 				var params map[string]interface{}
-				if err := json.Unmarshal([]byte(body), &params); err == nil {
+				if err := json.Unmarshal(body, &params); err == nil {
 					if m, ok := params["model"].(string); ok {
 						modelId = m
 					}
+				} else {
+					g.Log().Debugf(ctx, "[REQUEST] Failed to unmarshal request body: %v", err)
 				}
 			}
 
@@ -442,7 +470,8 @@ func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
 
 			if modelId == "" {
 				g.Log().Warningf(ctx, "[REQUEST] Missing model parameter for %s", path)
-				middleware.WriteError(r, http.StatusBadRequest, "model parameter is required", "invalid_request_error", "missing_model")
+				middleware.WriteErrorStd(w, http.StatusBadRequest, "model parameter is required", "invalid_request_error", "missing_model")
+				statusCode = http.StatusBadRequest
 				return
 			}
 
@@ -470,7 +499,8 @@ func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
 					if err != nil {
 						s.mu.Unlock()
 						g.Log().Errorf(ctx, "[MODEL] Failed to load model %s: %v", modelId, err)
-						middleware.WriteError(r, http.StatusInternalServerError, "Failed to load model: "+err.Error(), "server_error", "model_load_failed")
+						middleware.WriteErrorStd(w, http.StatusInternalServerError, "Failed to load model: "+err.Error(), "server_error", "model_load_failed")
+						statusCode = http.StatusInternalServerError
 						return
 					}
 
@@ -492,7 +522,8 @@ func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
 
 		if backendAddr == "" {
 			g.Log().Warning(ctx, "[PROXY] No model is loaded, cannot proxy request")
-			middleware.WriteError(r, http.StatusServiceUnavailable, "No model is loaded, please make a request to a model-required endpoint first", "service_unavailable", "no_model_loaded")
+			middleware.WriteErrorStd(w, http.StatusServiceUnavailable, "No model is loaded, please make a request to a model-required endpoint first", "service_unavailable", "no_model_loaded")
+			statusCode = http.StatusServiceUnavailable
 			return
 		}
 
@@ -502,14 +533,15 @@ func (s *sLLM) ServeHTTP(ctx context.Context, r *ghttp.Request) {
 		backend, err := url.Parse(backendAddr)
 		if err != nil {
 			g.Log().Error(ctx, "[PROXY] Failed to parse backend URL:", err)
-			middleware.WriteError(r, http.StatusInternalServerError, "Failed to parse backend URL", "server_error", "invalid_backend_url")
+			middleware.WriteErrorStd(w, http.StatusInternalServerError, "Failed to parse backend URL", "server_error", "invalid_backend_url")
+			statusCode = http.StatusInternalServerError
 			return
 		}
 
 		g.Log().Debugf(ctx, "[PROXY] Forwarding request to %s%s", backendAddr, path)
 
 		// 直接转发请求，避免 GF 框架的响应处理干扰
-		forwardRequest(r, backend)
+		statusCode = forwardRequestStd(r, w, backend)
 
 		g.Log().Debugf(ctx, "[PROXY] Request forwarded successfully")
 	})
@@ -584,4 +616,71 @@ func forwardRequest(r *ghttp.Request, backend *url.URL) {
 	if err != nil {
 		g.Log().Error(r.Context(), "[PROXY] Copy response body error:", err)
 	}
+}
+
+// forwardRequestStd 直接转发请求到后端（标准库版本）
+func forwardRequestStd(r *http.Request, w http.ResponseWriter, backend *url.URL) int {
+	// 创建新的请求，避免修改原始请求
+	targetURL := &url.URL{
+		Scheme:   backend.Scheme,
+		Host:     backend.Host,
+		Path:     backend.Path + r.URL.Path,
+		RawQuery: r.URL.RawQuery,
+	}
+
+	// 创建新请求
+	newReq, err := http.NewRequest(r.Method, targetURL.String(), r.Body)
+	if err != nil {
+		g.Log().Error(r.Context(), "[PROXY] Create new request error:", err)
+		writeErrorStd(w, http.StatusBadGateway, "Bad gateway", "server_error", "proxy_error")
+		return http.StatusBadGateway
+	}
+
+	// 复制请求头
+	for key, values := range r.Header {
+		for _, value := range values {
+			newReq.Header.Add(key, value)
+		}
+	}
+	newReq.Host = backend.Host
+
+	// 创建客户端并转发请求
+	client := &http.Client{
+		Transport: &http.Transport{
+			DisableCompression: true,
+		},
+	}
+
+	resp, err := client.Do(newReq)
+	if err != nil {
+		g.Log().Error(r.Context(), "[PROXY] Forward request error:", err)
+		writeErrorStd(w, http.StatusBadGateway, "Bad gateway", "server_error", "proxy_error")
+		return http.StatusBadGateway
+	}
+	defer resp.Body.Close()
+
+	// 复制响应头
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+
+	// 设置响应状态码
+	w.WriteHeader(resp.StatusCode)
+
+	// 复制响应体
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		g.Log().Error(r.Context(), "[PROXY] Copy response body error:", err)
+	}
+
+	return resp.StatusCode
+}
+
+// writeErrorStd 写入标准错误响应
+func writeErrorStd(w http.ResponseWriter, status int, message string, errorType string, code string) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	w.Write([]byte(`{"error":{"message":"` + message + `","type":"` + errorType + `","param":null,"code":"` + code + `"}}`))
 }

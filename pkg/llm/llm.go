@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 
@@ -44,9 +45,14 @@ func (l *LLM) GetModel(ctx context.Context, modelId string) (map[string]interfac
 	}, nil
 }
 
-// ServeHTTP 处理 HTTP 请求
+// ServeHTTP 处理 HTTP 请求（GF 框架版本）
 func (l *LLM) ServeHTTP(r *ghttp.Request) {
-	service.LLM().ServeHTTP(r.Context(), r)
+	l.ProxyHTTP(r.Context(), r.Request, r.Response.ResponseWriter)
+}
+
+// ProxyHTTP 处理 HTTP 请求（标准库版本）
+func (l *LLM) ProxyHTTP(ctx context.Context, r *http.Request, w http.ResponseWriter) {
+	service.LLM().ServeHTTP(ctx, r, w)
 }
 
 // LoadModel 加载模型

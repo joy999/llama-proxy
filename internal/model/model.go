@@ -38,6 +38,7 @@ type DefaultParams struct {
 	CacheTypeK      string  `json:"cache_type_k"`
 	CacheTypeV      string  `json:"cache_type_v"`
 	FlashAttn       string  `json:"flash_attn"`
+	VisionModelPath string  `json:"vision_model_path"`
 	NoMmap          bool    `json:"no_mmap"`
 	Mlock           bool    `json:"mlock"`
 	Temp            float64 `json:"temp"`

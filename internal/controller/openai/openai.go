@@ -35,5 +35,5 @@ func (c *Controller) GetModel(ctx context.Context, req *v1.GetModelReq) (res *v1
 }
 
 func ProxyHandler(r *ghttp.Request) {
-	service.LLM().ServeHTTP(r.Context(), r)
+	service.LLM().ServeHTTP(r.Context(), r.Request, r.Response.ResponseWriter)
 }
