@@ -160,6 +160,31 @@ openai:
       gpu_layers: 35
 ```
 
+### 参数传递规则
+
+参数传递遵循以下优先级和规则：
+
+1. **优先级**：模型配置 > 默认配置 > 不传递（使用 llama-server 默认值）
+
+2. **不传递参数的方法**：
+   - 对于**数字类型**（如 `ctx_size`, `threads`, `gpu_layers`）：设置为 `0` 或注释掉
+   - 对于**字符串类型**（如 `cache_type_k`, `flash_attn`）：设置为空字符串 `""` 或注释掉
+
+3. **示例**：
+   ```yaml
+   models:
+     - id: "my-model"
+       name: "My Model"
+       model_path: "/models/my-model.gguf"
+       ctx_size: 4096        # 传递 --ctx-size 4096
+       threads: 8            # 传递 --threads 8
+       gpu_layers: 0         # 不传递 --n-gpu-layers（使用 llama-server 默认）
+       # cache_type_k:       # 不传递 --cache-type-k（使用 llama-server 默认）
+       flash_attn: ""        # 不传递 --flash-attn
+   ```
+
+4. **布尔类型**（`no_mmap`, `mlock`）：设置为 `true` 时传递对应参数，否则不传递
+
 ## 项目结构
 
 ```

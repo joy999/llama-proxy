@@ -121,47 +121,47 @@ func buildCommandArgs(cfg *model.ModelConfig, defaultParams *model.DefaultParams
 	args = append(args, "--model", cfg.ModelPath)
 	args = append(args, "--port", strconv.Itoa(port))
 
-	ctxSize := cfg.CtxSize
-	if ctxSize == 0 {
-		ctxSize = defaultParams.CtxSize
+	if cfg.CtxSize != 0 {
+		args = append(args, "--ctx-size", strconv.Itoa(cfg.CtxSize))
+	} else if defaultParams.CtxSize != 0 {
+		args = append(args, "--ctx-size", strconv.Itoa(defaultParams.CtxSize))
 	}
-	args = append(args, "--ctx-size", strconv.Itoa(ctxSize))
 
-	threads := cfg.Threads
-	if threads == 0 {
-		threads = defaultParams.Threads
+	if cfg.Threads != 0 {
+		args = append(args, "--threads", strconv.Itoa(cfg.Threads))
+	} else if defaultParams.Threads != 0 {
+		args = append(args, "--threads", strconv.Itoa(defaultParams.Threads))
 	}
-	args = append(args, "--threads", strconv.Itoa(threads))
 
-	parallel := cfg.Parallel
-	if parallel == 0 {
-		parallel = defaultParams.Parallel
+	if cfg.Parallel != 0 {
+		args = append(args, "--parallel", strconv.Itoa(cfg.Parallel))
+	} else if defaultParams.Parallel != 0 {
+		args = append(args, "--parallel", strconv.Itoa(defaultParams.Parallel))
 	}
-	args = append(args, "--parallel", strconv.Itoa(parallel))
 
-	gpuLayers := cfg.GpuLayers
-	if gpuLayers == 0 {
-		gpuLayers = defaultParams.GpuLayers
+	if cfg.GpuLayers != 0 {
+		args = append(args, "--n-gpu-layers", strconv.Itoa(cfg.GpuLayers))
+	} else if defaultParams.GpuLayers != 0 {
+		args = append(args, "--n-gpu-layers", strconv.Itoa(defaultParams.GpuLayers))
 	}
-	args = append(args, "--n-gpu-layers", strconv.Itoa(gpuLayers))
 
-	cacheTypeK := cfg.CacheTypeK
-	if cacheTypeK == "" {
-		cacheTypeK = defaultParams.CacheTypeK
+	if cfg.CacheTypeK != "" {
+		args = append(args, "--cache-type-k", cfg.CacheTypeK)
+	} else if defaultParams.CacheTypeK != "" {
+		args = append(args, "--cache-type-k", defaultParams.CacheTypeK)
 	}
-	args = append(args, "--cache-type-k", cacheTypeK)
 
-	cacheTypeV := cfg.CacheTypeV
-	if cacheTypeV == "" {
-		cacheTypeV = defaultParams.CacheTypeV
+	if cfg.CacheTypeV != "" {
+		args = append(args, "--cache-type-v", cfg.CacheTypeV)
+	} else if defaultParams.CacheTypeV != "" {
+		args = append(args, "--cache-type-v", defaultParams.CacheTypeV)
 	}
-	args = append(args, "--cache-type-v", cacheTypeV)
 
-	flashAttn := cfg.FlashAttn
-	if flashAttn == "" {
-		flashAttn = defaultParams.FlashAttn
-	}
-	if flashAttn == "on" {
+	if cfg.FlashAttn != "" {
+		if cfg.FlashAttn == "on" {
+			args = append(args, "--flash-attn")
+		}
+	} else if defaultParams.FlashAttn != "" && defaultParams.FlashAttn == "on" {
 		args = append(args, "--flash-attn")
 	}
 
@@ -173,41 +173,41 @@ func buildCommandArgs(cfg *model.ModelConfig, defaultParams *model.DefaultParams
 		args = append(args, "--mlock")
 	}
 
-	temp := cfg.Temp
-	if temp == 0 {
-		temp = defaultParams.Temp
+	if cfg.Temp != 0 {
+		args = append(args, "--temp", strconv.FormatFloat(cfg.Temp, 'f', -1, 64))
+	} else if defaultParams.Temp != 0 {
+		args = append(args, "--temp", strconv.FormatFloat(defaultParams.Temp, 'f', -1, 64))
 	}
-	args = append(args, "--temp", strconv.FormatFloat(temp, 'f', -1, 64))
 
-	topP := cfg.TopP
-	if topP == 0 {
-		topP = defaultParams.TopP
+	if cfg.TopP != 0 {
+		args = append(args, "--top-p", strconv.FormatFloat(cfg.TopP, 'f', -1, 64))
+	} else if defaultParams.TopP != 0 {
+		args = append(args, "--top-p", strconv.FormatFloat(defaultParams.TopP, 'f', -1, 64))
 	}
-	args = append(args, "--top-p", strconv.FormatFloat(topP, 'f', -1, 64))
 
-	topK := cfg.TopK
-	if topK == 0 {
-		topK = defaultParams.TopK
+	if cfg.TopK != 0 {
+		args = append(args, "--top-k", strconv.Itoa(cfg.TopK))
+	} else if defaultParams.TopK != 0 {
+		args = append(args, "--top-k", strconv.Itoa(defaultParams.TopK))
 	}
-	args = append(args, "--top-k", strconv.Itoa(topK))
 
-	minP := cfg.MinP
-	if minP == 0 {
-		minP = defaultParams.MinP
+	if cfg.MinP != 0 {
+		args = append(args, "--min-p", strconv.FormatFloat(cfg.MinP, 'f', -1, 64))
+	} else if defaultParams.MinP != 0 {
+		args = append(args, "--min-p", strconv.FormatFloat(defaultParams.MinP, 'f', -1, 64))
 	}
-	args = append(args, "--min-p", strconv.FormatFloat(minP, 'f', -1, 64))
 
-	presencePenalty := cfg.PresencePenalty
-	if presencePenalty == 0 {
-		presencePenalty = defaultParams.PresencePenalty
+	if cfg.PresencePenalty != 0 {
+		args = append(args, "--presence-penalty", strconv.FormatFloat(cfg.PresencePenalty, 'f', -1, 64))
+	} else if defaultParams.PresencePenalty != 0 {
+		args = append(args, "--presence-penalty", strconv.FormatFloat(defaultParams.PresencePenalty, 'f', -1, 64))
 	}
-	args = append(args, "--presence-penalty", strconv.FormatFloat(presencePenalty, 'f', -1, 64))
 
-	repeatPenalty := cfg.RepeatPenalty
-	if repeatPenalty == 0 {
-		repeatPenalty = defaultParams.RepeatPenalty
+	if cfg.RepeatPenalty != 0 {
+		args = append(args, "--repeat-penalty", strconv.FormatFloat(cfg.RepeatPenalty, 'f', -1, 64))
+	} else if defaultParams.RepeatPenalty != 0 {
+		args = append(args, "--repeat-penalty", strconv.FormatFloat(defaultParams.RepeatPenalty, 'f', -1, 64))
 	}
-	args = append(args, "--repeat-penalty", strconv.FormatFloat(repeatPenalty, 'f', -1, 64))
 
 	if cfg.VisionModelPath != "" {
 		args = append(args, "--mmproj", cfg.VisionModelPath)
