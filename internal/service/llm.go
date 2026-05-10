@@ -7,8 +7,9 @@ package service
 
 import (
 	"context"
-	"llama-proxy/internal/model"
 	"net/http"
+
+	"github.com/joy999/llama-proxy/internal/model"
 )
 
 type (

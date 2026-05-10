@@ -1,4 +1,4 @@
-module llama-proxy
+module github.com/joy999/llama-proxy
 
 go 1.18
 

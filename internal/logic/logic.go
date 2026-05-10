@@ -5,5 +5,5 @@
 package logic
 
 import (
-	_ "llama-proxy/internal/logic/llm"
+	_ "github.com/joy999/llama-proxy/internal/logic/llm"
 )

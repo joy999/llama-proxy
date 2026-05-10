@@ -1,6 +1,6 @@
 package llm
 
-import "llama-proxy/internal/service"
+import "github.com/joy999/llama-proxy/internal/service"
 
 func init() {
 	service.RegisterLLM(newLLM())

@@ -7,8 +7,8 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 
-	"llama-proxy/internal/controller/openai"
-	"llama-proxy/internal/middleware"
+	"github.com/joy999/llama-proxy/internal/controller/openai"
+	"github.com/joy999/llama-proxy/internal/middleware"
 )
 
 var (

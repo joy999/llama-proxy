@@ -5,8 +5,8 @@ import (
 
 	"github.com/gogf/gf/v2/net/ghttp"
 
-	v1 "llama-proxy/api/openai/v1"
-	"llama-proxy/internal/service"
+	v1 "github.com/joy999/llama-proxy/api/openai/v1"
+	"github.com/joy999/llama-proxy/internal/service"
 )
 
 type Controller struct{}

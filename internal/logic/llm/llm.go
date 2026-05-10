@@ -21,8 +21,8 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/grpool"
 
-	"llama-proxy/internal/middleware"
-	"llama-proxy/internal/model"
+	"github.com/joy999/llama-proxy/internal/middleware"
+	"github.com/joy999/llama-proxy/internal/model"
 )
 
 type sLLM struct {

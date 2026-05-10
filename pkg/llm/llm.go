@@ -4,9 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gogf/gf/v2/net/ghttp"
-
-	"llama-proxy/internal/service"
+	"github.com/joy999/llama-proxy/internal/service"
 )
 
 // LLM 是 llama-proxy 的导出层，通过 service 层访问内部功能
@@ -43,11 +41,6 @@ func (l *LLM) GetModel(ctx context.Context, modelId string) (map[string]interfac
 		"id":     model.Id,
 		"object": model.Object,
 	}, nil
-}
-
-// ServeHTTP 处理 HTTP 请求（GF 框架版本）
-func (l *LLM) ServeHTTP(r *ghttp.Request) {
-	l.ProxyHTTP(r.Context(), r.Request, r.Response.ResponseWriter)
 }
 
 // ProxyHTTP 处理 HTTP 请求（标准库版本）

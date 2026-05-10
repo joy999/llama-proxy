@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"llama-proxy/internal/model"
+	"github.com/joy999/llama-proxy/internal/model"
 
 	"github.com/gogf/gf/v2/frame/g"
 )
