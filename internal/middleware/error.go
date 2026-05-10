@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -93,14 +94,24 @@ func handleSuccess(r *ghttp.Request) {
 		r.Response.Status = http.StatusOK
 	}
 
-	if r.Response.Header().Get("Content-Type") == "" {
-		r.Response.Header().Set("Content-Type", "application/json; charset=utf-8")
-	}
+	contentType := r.Response.Header().Get("Content-Type")
+	contentLength := r.Response.Header().Get("Content-Length")
+	transferEncoding := r.Response.Header().Get("Transfer-Encoding")
 
-	if r.Response.Buffer() == nil || len(r.Response.Buffer()) == 0 {
-		if handlerRes := r.GetHandlerResponse(); handlerRes != nil {
-			r.Response.ClearBuffer()
-			r.Response.WriteJson(handlerRes)
+	isEventStream := strings.Contains(contentType, "text/event-stream")
+	isChunked := strings.Contains(transferEncoding, "chunked")
+	isProxyResponse := contentLength != "" || isEventStream || isChunked || (r.Response.Status != 0 && r.Response.Status != http.StatusOK)
+
+	if !isProxyResponse {
+		if contentType == "" {
+			r.Response.Header().Set("Content-Type", "application/json; charset=utf-8")
+		}
+
+		if r.Response.Buffer() == nil || len(r.Response.Buffer()) == 0 {
+			if handlerRes := r.GetHandlerResponse(); handlerRes != nil {
+				r.Response.ClearBuffer()
+				r.Response.WriteJson(handlerRes)
+			}
 		}
 	}
 }
