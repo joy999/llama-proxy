@@ -1,0 +1,118 @@
+# https://goframe.org/docs/web/server-config-file-template
+server:
+  address:     ":8000"
+  openapiPath: "/api.json"
+  swaggerPath: "/swagger"
+
+# https://goframe.org/docs/core/glog-config
+logger:
+  level : "all"
+  stdout: true
+
+# https://goframe.org/docs/core/gdb-config-file
+models:
+
+# OpenAI 兼容模型配置
+openai:
+  # llama-server 可执行文件路径
+  llama_server_path: "llama-server"
+  # 后端代理服务地址（备用）
+  backend_url: "http://127.0.0.1:8123"
+  # 闲置超时自动卸载模型（秒），0 表示禁用
+  idle_timeout: 300
+
+  # 默认模型参数（可被每个模型覆盖）
+  default_params:
+    ctx_size: 4096              # 上下文窗口大小
+    threads: 8                  # 线程数
+    parallel: 1                 # 并行处理数
+    gpu_layers: 0               # GPU加速层数
+    cache_type_k: "q4_0"        # K缓存类型
+    cache_type_v: "q4_0"        # V缓存类型
+    flash_attn: "on"            # 闪注意力优化
+    no_mmap: false              # 是否禁用mmap
+    mlock: false                # 是否锁定内存到物理内存
+    temp: 0.6                   # 温度参数
+    top_p: 0.95                 # top-p采样
+    top_k: 20                   # top-k采样
+    min_p: 0.0                  # min-p采样
+    presence_penalty: 0.0       # 存在惩罚
+    repeat_penalty: 1.0         # 重复惩罚
+
+  # 模型列表（按 llama.cpp 参数配置）
+  models:
+    # Llama 2 7B Chat
+    - id: "llama-2-7b-chat"
+      name: "Llama 2 7B Chat"
+      owned_by: "meta"
+      model_path: "/models/llama-2-7b-chat.gguf"
+      ctx_size: 4096
+      threads: 8
+      gpu_layers: 35
+
+    # Llama 2 13B Chat
+    - id: "llama-2-13b-chat"
+      name: "Llama 2 13B Chat"
+      owned_by: "meta"
+      model_path: "/models/llama-2-13b-chat.gguf"
+      ctx_size: 4096
+      threads: 8
+      gpu_layers: 40
+
+    # Llama 2 70B Chat
+    - id: "llama-2-70b-chat"
+      name: "Llama 2 70B Chat"
+      owned_by: "meta"
+      model_path: "/models/llama-2-70b-chat.gguf"
+      ctx_size: 8192
+      threads: 16
+      gpu_layers: 80
+
+    # Mistral 7B
+    - id: "mistral-7b"
+      name: "Mistral 7B"
+      owned_by: "mistralai"
+      model_path: "/models/mistral-7b-openorca.Q4_K_M.gguf"
+      ctx_size: 8192
+      threads: 8
+      gpu_layers: 35
+
+    # 多模态模型示例（带视觉编码器）
+    - id: "llava-1.5-7b"
+      name: "LLaVA 1.5 7B"
+      owned_by: "llava"
+      model_path: "/models/llava-1.5-7b-v1.5.gguf"
+      vision_model_path: "/models/llava-1.5-7b-v1.5-mmproj-f16.gguf"
+      ctx_size: 4096
+      threads: 8
+      gpu_layers: 35
+
+    # Embedding 模型
+    - id: "bge-m3"
+      name: "BGE-M3 Embedding"
+      owned_by: "BAAI"
+      model_path: "/models/bge-m3.gguf"
+      ctx_size: 8192
+      threads: 8
+      gpu_layers: 0
+
+    # Qwen 3.6B 模型（参考用户BAT配置）
+    - id: "qwen-3.6b-chat"
+      name: "Qwen 3.6B Chat"
+      owned_by: "alibaba"
+      model_path: "H:/lm_models/mudler/Qwen3.6-35B-A3B-APEX-I-Compact_GGUF/Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
+      ctx_size: 262144
+      threads: 16
+      parallel: 1
+      gpu_layers: 40
+      cache_type_k: "q4_0"
+      cache_type_v: "q4_0"
+      flash_attn: "on"
+      no_mmap: true
+      mlock: true
+      temp: 0.6
+      top_p: 0.95
+      top_k: 20
+      min_p: 0.0
+      presence_penalty: 0.0
+      repeat_penalty: 1.0
