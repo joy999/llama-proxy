@@ -96,17 +96,69 @@ Content-Type: application/json
 
 ## 配置说明
 
+配置文件位于 `manifest/config/config.yaml`，详细配置请参考 `manifest/config/config.tpl.yaml`。
+
+### 主配置项
+
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `llama_server_path` | string | `llama-server` | llama-server 可执行文件路径 |
+| `backend_url` | string | `http://127.0.0.1:8123` | 备用后端代理地址 |
 | `idle_timeout` | int | 300 | 闲置超时秒数，0 表示禁用自动卸载 |
-| `models[].id` | string | - | 模型唯一标识符 |
-| `models[].name` | string | - | 模型名称 |
-| `models[].model_path` | string | - | 模型文件路径 |
-| `models[].ctx_size` | int | 4096 | 上下文窗口大小 |
-| `models[].threads` | int | 8 | 线程数 |
-| `models[].gpu_layers` | int | 0 | GPU 加速层数 |
-| `models[].parallel` | int | 1 | 并行处理数 |
+
+### 默认模型参数 (default_params)
+
+这些参数会被所有模型继承，可以在每个模型中覆盖：
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ctx_size` | int | 4096 | 上下文窗口大小 |
+| `threads` | int | 8 | 线程数 |
+| `parallel` | int | 1 | 并行处理数 |
+| `gpu_layers` | int | 0 | GPU 加速层数，0 表示仅使用 CPU |
+| `cache_type_k` | string | q4_0 | K 缓存量化类型 |
+| `cache_type_v` | string | q4_0 | V 缓存量化类型 |
+| `flash_attn` | string | on | 闪注意力优化 |
+| `no_mmap` | bool | false | 是否禁用 mmap |
+| `mlock` | bool | false | 是否锁定内存到物理内存 |
+| `temp` | float | 0.6 | 温度参数 |
+| `top_p` | float | 0.95 | top-p 采样 |
+| `top_k` | int | 20 | top-k 采样 |
+| `min_p` | float | 0.0 | min-p 采样 |
+| `presence_penalty` | float | 0.0 | 存在惩罚 |
+| `repeat_penalty` | float | 1.0 | 重复惩罚 |
+
+### 模型配置 (models)
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `id` | string | 模型唯一标识符，用于 API 请求 |
+| `name` | string | 模型名称 |
+| `owned_by` | string | 模型拥有者 |
+| `model_path` | string | 模型文件路径 |
+| `vision_model_path` | string | 视觉模型路径（多模态模型） |
+| 其他参数 | - | 参考 default_params，可以覆盖默认值 |
+
+### 配置示例
+
+```yaml
+openai:
+  llama_server_path: "/path/to/llama-server"
+  idle_timeout: 300
+
+  default_params:
+    ctx_size: 4096
+    threads: 8
+    gpu_layers: 35
+
+  models:
+    - id: "llama-2-7b-chat"
+      name: "Llama 2 7B Chat"
+      model_path: "/models/llama-2-7b-chat.gguf"
+      ctx_size: 4096
+      threads: 8
+      gpu_layers: 35
+```
 
 ## 项目结构
 
