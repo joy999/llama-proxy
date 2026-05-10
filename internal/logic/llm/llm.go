@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -140,10 +141,10 @@ func buildCommandArgs(cfg *model.ModelConfig, defaultParams *model.DefaultParams
 		args = append(args, "--parallel", strconv.Itoa(defaultParams.Parallel))
 	}
 
-	if cfg.GpuLayers != 0 {
-		args = append(args, "--n-gpu-layers", strconv.Itoa(cfg.GpuLayers))
-	} else if defaultParams.GpuLayers != 0 {
-		args = append(args, "--n-gpu-layers", strconv.Itoa(defaultParams.GpuLayers))
+	if cfg.GpuLayers != nil && *cfg.GpuLayers >= 0 {
+		args = append(args, "--n-gpu-layers", strconv.Itoa(*cfg.GpuLayers))
+	} else if defaultParams.GpuLayers != nil && *defaultParams.GpuLayers >= 0 {
+		args = append(args, "--n-gpu-layers", strconv.Itoa(*defaultParams.GpuLayers))
 	}
 
 	if cfg.CacheTypeK != "" {
@@ -256,6 +257,9 @@ func (s *sLLM) loadModelLocked(ctx context.Context, modelId string) (addr string
 	args := buildCommandArgs(cfg, defaultParams, port)
 
 	llamaPath := g.Cfg().MustGet(ctx, "openai.llama_server_path", "llama-server").String()
+
+	// 打印启动命令参数，方便调试
+	g.Log().Infof(ctx, "Starting llama-server with command: %s %s", llamaPath, strings.Join(args, " "))
 
 	s.cmd = exec.Command(llamaPath, args...)
 	s.cmd.Stdout = os.Stdout

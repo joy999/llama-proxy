@@ -115,7 +115,7 @@ Content-Type: application/json
 | `ctx_size` | int | 4096 | 上下文窗口大小 |
 | `threads` | int | 8 | 线程数 |
 | `parallel` | int | 1 | 并行处理数 |
-| `gpu_layers` | int | 0 | GPU 加速层数，0 表示仅使用 CPU |
+| `gpu_layers` | int | - | GPU 加速层数，不设置表示不传递参数，0 表示纯 CPU 计算，>0 表示使用 GPU 层数 |
 | `cache_type_k` | string | q4_0 | K 缓存量化类型 |
 | `cache_type_v` | string | q4_0 | V 缓存量化类型 |
 | `flash_attn` | string | on | 闪注意力优化 |
@@ -167,8 +167,15 @@ openai:
 1. **优先级**：模型配置 > 默认配置 > 不传递（使用 llama-server 默认值）
 
 2. **不传递参数的方法**：
-   - 对于**数字类型**（如 `ctx_size`, `threads`, `gpu_layers`）：设置为 `0` 或注释掉
+   - 对于**数字类型**（如 `ctx_size`, `threads`, `gpu_layers`）：注释掉该配置项
    - 对于**字符串类型**（如 `cache_type_k`, `flash_attn`）：设置为空字符串 `""` 或注释掉
+   - 对于**布尔类型**（如 `no_mmap`, `mlock`）：设置为 `false` 或注释掉
+
+3. **特殊说明**：
+   - `gpu_layers` 使用指针类型，可以正确区分"未设置"和"设置为 0"
+   - 未设置时：不传递 `--n-gpu-layers` 参数（使用 llama-server 默认行为）
+   - 设置为 0：传递 `--n-gpu-layers 0`（纯 CPU 计算）
+   - 设置为 >0：传递对应的 GPU 层数
 
 3. **示例**：
    ```yaml
@@ -178,12 +185,21 @@ openai:
        model_path: "/models/my-model.gguf"
        ctx_size: 4096        # 传递 --ctx-size 4096
        threads: 8            # 传递 --threads 8
-       gpu_layers: 0         # 不传递 --n-gpu-layers（使用 llama-server 默认）
+       gpu_layers: 0         # 传递 --n-gpu-layers 0（纯 CPU 计算）
+       # gpu_layers: 35      # 传递 --n-gpu-layers 35（使用 35 层 GPU）
        # cache_type_k:       # 不传递 --cache-type-k（使用 llama-server 默认）
        flash_attn: ""        # 不传递 --flash-attn
    ```
 
 4. **布尔类型**（`no_mmap`, `mlock`）：设置为 `true` 时传递对应参数，否则不传递
+
+## 调试日志
+
+启动模型时，会打印完整的 llama-server 启动命令参数，方便调试和确认配置：
+
+```
+[INFO] Starting llama-server with command: /path/to/llama-server --model /models/xxx.gguf --port 8125 --ctx-size 4096 --parallel 1 ...
+```
 
 ## 项目结构
 

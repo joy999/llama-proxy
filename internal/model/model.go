@@ -16,7 +16,7 @@ type ModelConfig struct {
 	CtxSize         int     `json:"ctx_size"`
 	Threads         int     `json:"threads"`
 	Parallel        int     `json:"parallel"`
-	GpuLayers       int     `json:"gpu_layers"`
+	GpuLayers       *int    `json:"gpu_layers"`
 	CacheTypeK      string  `json:"cache_type_k"`
 	CacheTypeV      string  `json:"cache_type_v"`
 	FlashAttn       string  `json:"flash_attn"`
@@ -34,7 +34,7 @@ type DefaultParams struct {
 	CtxSize         int     `json:"ctx_size"`
 	Threads         int     `json:"threads"`
 	Parallel        int     `json:"parallel"`
-	GpuLayers       int     `json:"gpu_layers"`
+	GpuLayers       *int    `json:"gpu_layers"`
 	CacheTypeK      string  `json:"cache_type_k"`
 	CacheTypeV      string  `json:"cache_type_v"`
 	FlashAttn       string  `json:"flash_attn"`
