@@ -632,8 +632,8 @@ func forwardRequestStd(r *http.Request, w http.ResponseWriter, backend *url.URL)
 		RawQuery: r.URL.RawQuery,
 	}
 
-	// 创建新请求
-	newReq, err := http.NewRequest(r.Method, targetURL.String(), r.Body)
+	// 创建新请求，使用原始请求的上下文（包含客户端断开信号）
+	newReq, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL.String(), r.Body)
 	if err != nil {
 		g.Log().Error(r.Context(), "[PROXY] Create new request error:", err)
 		writeErrorStd(w, http.StatusBadGateway, "Bad gateway", "server_error", "proxy_error")
@@ -657,6 +657,11 @@ func forwardRequestStd(r *http.Request, w http.ResponseWriter, backend *url.URL)
 
 	resp, err := client.Do(newReq)
 	if err != nil {
+		// 检查是否是客户端取消导致的错误
+		if r.Context().Err() != nil {
+			g.Log().Warning(r.Context(), "[PROXY] Client disconnected, request cancelled")
+			return 0 // 客户端断开，不返回错误状态码
+		}
 		g.Log().Error(r.Context(), "[PROXY] Forward request error:", err)
 		writeErrorStd(w, http.StatusBadGateway, "Bad gateway", "server_error", "proxy_error")
 		return http.StatusBadGateway
@@ -673,10 +678,15 @@ func forwardRequestStd(r *http.Request, w http.ResponseWriter, backend *url.URL)
 	// 设置响应状态码
 	w.WriteHeader(resp.StatusCode)
 
-	// 复制响应体
+	// 复制响应体，监听客户端断开
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		g.Log().Error(r.Context(), "[PROXY] Copy response body error:", err)
+		// 检查是否是客户端断开导致的错误
+		if r.Context().Err() != nil {
+			g.Log().Warning(r.Context(), "[PROXY] Client disconnected during response streaming")
+		} else {
+			g.Log().Error(r.Context(), "[PROXY] Copy response body error:", err)
+		}
 	}
 
 	return resp.StatusCode
